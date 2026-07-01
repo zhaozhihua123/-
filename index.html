@@ -1,0 +1,264 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>智能物品分类</title>
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+  <div id="app">
+    <!-- 顶部导航栏 -->
+    <header class="navbar">
+      <div class="navbar-title" id="navbarTitle">智能物品分类</div>
+      <div class="navbar-back" id="navbarBack" style="display: none;" onclick="goBack()">‹</div>
+    </header>
+
+    <!-- 页面容器 -->
+    <main class="main-container">
+      <!-- 物品列表页面 -->
+      <div id="page-index" class="page active">
+        <!-- 搜索栏 -->
+        <div class="search-bar">
+          <div class="search-input-wrap">
+            <span class="search-icon">🔍</span>
+            <input type="text" class="search-input" placeholder="搜索物品名称、描述或标签" oninput="handleSearch(this.value)">
+            <span class="search-clear" id="searchClear" style="display: none;" onclick="clearSearch()">✕</span>
+          </div>
+          <div class="filter-btn" onclick="toggleFilter()">
+            <span class="filter-icon" id="filterIcon">▶</span>
+            <span>筛选</span>
+          </div>
+        </div>
+
+        <!-- 筛选面板 -->
+        <div class="filter-panel" id="filterPanel">
+          <div class="filter-section">
+            <div class="filter-title">颜色</div>
+            <div class="filter-options flex-wrap" id="colorFilterOptions"></div>
+          </div>
+          <div class="filter-section">
+            <div class="filter-title">尺寸</div>
+            <div class="filter-options flex-wrap" id="sizeFilterOptions"></div>
+          </div>
+          <div class="filter-section">
+            <div class="filter-title">排序</div>
+            <div class="filter-options">
+              <div class="sort-option active" data-sort="createTime" onclick="handleSortChange('createTime')">
+                时间 <span id="sortTimeArrow">↓</span>
+              </div>
+              <div class="sort-option" data-sort="name" onclick="handleSortChange('name')">
+                名称 <span id="sortNameArrow"></span>
+              </div>
+              <div class="sort-option" data-sort="size" onclick="handleSortChange('size')">
+                尺寸 <span id="sortSizeArrow"></span>
+              </div>
+            </div>
+          </div>
+          <div class="filter-actions">
+            <div class="btn-secondary" onclick="resetFilter()">重置</div>
+          </div>
+        </div>
+
+        <!-- 分类导航 -->
+        <scroll-view class="category-nav">
+          <div class="category-item active" data-id="0" onclick="selectCategory(0)">全部</div>
+          <div id="categoryNavItems"></div>
+        </scroll-view>
+
+        <!-- 物品列表 -->
+        <div class="items-list" id="itemsList"></div>
+
+        <!-- 空状态 -->
+        <div class="empty-state" id="emptyState">
+          <div class="empty-icon">📦</div>
+          <div class="empty-text">暂无物品</div>
+          <div class="empty-desc">点击右下角按钮添加新物品</div>
+        </div>
+
+        <!-- 添加按钮 -->
+        <div class="add-btn" onclick="goToAdd()">+</div>
+      </div>
+
+      <!-- 添加物品页面 -->
+      <div id="page-add" class="page">
+        <div class="container">
+          <!-- 物品图片 -->
+          <div class="card">
+            <div class="form-label">物品图片</div>
+            <div class="image-upload-area">
+              <div id="imageUploadBtn" class="image-upload-btn" onclick="chooseImage()">
+                <span class="upload-icon">+</span>
+                <span class="upload-text">添加图片</span>
+              </div>
+              <div id="imagePreview" class="image-preview" style="display: none;">
+                <img id="previewImg" src="" class="preview-img">
+                <div class="remove-btn" onclick="removeImage()">×</div>
+              </div>
+              <input type="file" id="imageFile" accept="image/*" style="display: none;" onchange="handleImageSelect(event)">
+            </div>
+          </div>
+
+          <!-- 基本信息 -->
+          <div class="card">
+            <div class="form-item">
+              <div class="form-label required">物品名称</div>
+              <input type="text" class="form-input" placeholder="请输入物品名称" id="addName" maxlength="50">
+            </div>
+            <div class="form-item">
+              <div class="form-label required">物品分类</div>
+              <div class="form-picker" onclick="showCategoryPicker()">
+                <span id="addCategoryName" class="placeholder">请选择分类</span>
+                <span class="picker-arrow">›</span>
+              </div>
+            </div>
+            <div class="form-item">
+              <div class="form-label">物品描述</div>
+              <textarea class="form-textarea" placeholder="请输入物品描述（可选）" id="addDescription" maxlength="200"></textarea>
+            </div>
+          </div>
+
+          <!-- 颜色和尺寸 -->
+          <div class="card">
+            <div class="form-item">
+              <div class="form-label">颜色</div>
+              <div class="color-options flex-wrap" id="addColorOptions"></div>
+            </div>
+            <div class="form-item">
+              <div class="form-label">尺寸</div>
+              <div class="form-picker" onclick="showSizePicker()">
+                <span id="addSizeName" class="placeholder">请选择尺寸</span>
+                <span class="picker-arrow">›</span>
+              </div>
+            </div>
+          </div>
+
+          <!-- 特征标签 -->
+          <div class="card">
+            <div class="form-item">
+              <div class="form-label">特征标签</div>
+              <div class="tag-input-wrap">
+                <input type="text" class="tag-input" placeholder="输入标签后点击添加" id="addTagInput" maxlength="20">
+                <div class="add-tag-btn" onclick="addTag()">添加</div>
+              </div>
+              <div class="tags-wrap" id="addTagsWrap"></div>
+            </div>
+          </div>
+
+          <!-- 保存按钮 -->
+          <div class="save-btn-wrap">
+            <div class="btn-primary save-btn" onclick="saveItem()">保存物品</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- 分类管理页面 -->
+      <div id="page-classify" class="page">
+        <div class="container">
+          <!-- 添加按钮 -->
+          <div class="page-header">
+            <div class="btn-primary add-category-btn" onclick="showAddCategoryModal()">+ 添加分类</div>
+          </div>
+
+          <!-- 分类列表 -->
+          <div class="category-list" id="categoryList"></div>
+
+          <!-- 空状态 -->
+          <div class="empty-state" id="classifyEmptyState" style="display: none;">
+            <div class="empty-icon">📁</div>
+            <div class="empty-text">暂无分类</div>
+            <div class="empty-desc">点击上方按钮添加分类</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- 分类物品页面 -->
+      <div id="page-category" class="page">
+        <div class="container">
+          <!-- 分类信息 -->
+          <div class="category-header" id="categoryHeader"></div>
+
+          <!-- 物品列表 -->
+          <div class="items-list" id="categoryItemsList"></div>
+
+          <!-- 空状态 -->
+          <div class="empty-state" id="categoryEmptyState">
+            <div class="empty-icon">📦</div>
+            <div class="empty-text">该分类暂无物品</div>
+            <div class="empty-desc">点击右下角按钮添加新物品</div>
+          </div>
+
+          <!-- 添加按钮 -->
+          <div class="add-btn" onclick="goToAddWithCategory()">+</div>
+        </div>
+      </div>
+
+      <!-- 物品详情页面 -->
+      <div id="page-detail" class="page">
+        <div class="container" id="detailContainer"></div>
+      </div>
+    </main>
+
+    <!-- TabBar -->
+    <nav class="tabbar">
+      <div class="tab-item active" onclick="switchTab('index')">
+        <div class="tab-icon">📋</div>
+        <div class="tab-text">物品列表</div>
+      </div>
+      <div class="tab-item" onclick="switchTab('classify')">
+        <div class="tab-icon">📁</div>
+        <div class="tab-text">分类管理</div>
+      </div>
+    </nav>
+
+    <!-- 弹窗遮罩 -->
+    <div class="modal-overlay" id="modalOverlay" style="display: none;" onclick="closeModal()"></div>
+
+    <!-- 分类选择弹窗 -->
+    <div class="modal" id="categoryModal" style="display: none;">
+      <div class="modal-content">
+        <div class="modal-header">选择分类</div>
+        <div class="modal-body" id="categoryModalList"></div>
+      </div>
+    </div>
+
+    <!-- 尺寸选择弹窗 -->
+    <div class="modal" id="sizeModal" style="display: none;">
+      <div class="modal-content">
+        <div class="modal-header">选择尺寸</div>
+        <div class="modal-body" id="sizeModalList"></div>
+      </div>
+    </div>
+
+    <!-- 添加分类弹窗 -->
+    <div class="modal" id="addCategoryModal" style="display: none;">
+      <div class="modal-content">
+        <div class="modal-header">{{isEditingCategory ? '编辑分类' : '添加分类'}}</div>
+        <div class="modal-body">
+          <div class="form-item">
+            <div class="form-label required">分类名称</div>
+            <input type="text" class="form-input" placeholder="请输入分类名称" id="categoryNameInput">
+          </div>
+          <div class="form-item">
+            <div class="form-label">图标</div>
+            <div class="icon-options flex-wrap" id="iconOptions"></div>
+          </div>
+          <div class="form-item">
+            <div class="form-label">颜色</div>
+            <div class="color-options flex-wrap" id="categoryColorOptions"></div>
+          </div>
+        </div>
+        <div class="modal-footer">
+          <div class="btn-secondary" onclick="closeAddCategoryModal()">取消</div>
+          <div class="btn-primary" onclick="saveCategory()">保存</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Toast 提示 -->
+    <div class="toast" id="toast"></div>
+  </div>
+
+  <script src="app.js"></script>
+</body>
+</html>
